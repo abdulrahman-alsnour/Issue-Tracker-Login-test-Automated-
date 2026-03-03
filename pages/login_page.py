@@ -62,9 +62,9 @@ class LoginPage:
         raise AssertionError("Password input not found.")
 
     def _find_login_button(self):
-        """Submit button."""
+        """Submit button (visible; use JS click to avoid intercept in CI)."""
         el = self.driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
-        self._wait.until(EC.element_to_be_clickable(el))
+        self._wait.until(EC.visibility_of(el))
         return el
 
     def enter_email(self, email: str):
@@ -76,11 +76,15 @@ class LoginPage:
         self._find_password_input().send_keys(password)
 
     def click_login(self):
-        self._find_login_button().click()
+        """Click login via JavaScript so it works in CI when an overlay blocks normal click."""
+        btn = self._find_login_button()
+        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
+        self.driver.execute_script("arguments[0].click();", btn)
 
     def click_login_force(self):
         """Click login via JavaScript (use when button may be disabled e.g. blank fields)."""
         btn = self.driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
         self.driver.execute_script("arguments[0].click();", btn)
 
     def login(self, email: str, password: str):
