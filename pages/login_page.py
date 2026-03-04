@@ -178,3 +178,4 @@ class LoginPage:
         if open_menu_first:
             self.open_menu_if_present()
         self.find_logout().click()
+#test comment
