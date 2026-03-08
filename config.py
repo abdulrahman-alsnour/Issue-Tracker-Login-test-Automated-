@@ -7,7 +7,7 @@ MANAGEMENT_USERS_URL = f"{BASE_URL}/admin/user"
 MANAGEMENT_USER_CREATE_URL = f"{BASE_URL}/admin/user/create"
 
 CUSTOMER_USERS = [
-    {"email": "client1.project1", "password": "123456", "project_id": "project1"},
+    {"email": "client1.project2", "password": "123456", "project_id": "project1"},
     {"email": "client2.project", "password": "123456"},
     {"email": "client2.project2", "password": "123456"},
 ]
