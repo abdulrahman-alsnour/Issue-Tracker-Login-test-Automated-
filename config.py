@@ -22,10 +22,10 @@ SUPERADMIN_USER = {"email": "new.superadmin", "password": "123456"}
 
 # Test user created then deleted in user management test (unique so we can search)
 NEW_USER_FOR_MANAGEMENT_TEST = {
-    "user_name": "test.auto.admin107",
+    "user_name": "test.auto.admin109",
     "first_name": "Test",
     "last_name": "Automation",
-    "email": "test.auto.admin107@example.com",
+    "email": "test.auto.admin109@example.com",
     "password": "TestPass123!",
     "role": "Admin",
 }
@@ -34,10 +34,10 @@ PROJECT_FOR_NEW_USER = "Legal"
 
 # Data to set on the Update User (edit) page: new name, email, first/last name, role Agency, projects Sales Academy + Subscriptions, Active OFF
 UPDATED_USER_FOR_EDIT_TEST = {
-    "user_name": "test.auto.edited8",
+    "user_name": "test.auto.edited9",
     "first_name": "Edited",
     "last_name": "User",
-    "email": "test.auto.edited8@example.com",
+    "email": "test.auto.edited9@example.com",
     "role": "Agency",
 }
 # On edit: deselect this project, then select these
