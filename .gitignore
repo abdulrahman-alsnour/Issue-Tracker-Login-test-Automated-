@@ -5,3 +5,4 @@ __pycache__/
 *.pyo
 .env
 login_page.html
+USER_MANAGEMENT_TEST_EXPLAINED.txt
