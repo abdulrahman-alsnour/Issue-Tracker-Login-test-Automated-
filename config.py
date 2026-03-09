@@ -1,4 +1,4 @@
-"""Configuration and test data for QBS Issue Tracker login tests."""
+""" Configuration and test data for QBS Issue Tracker login tests."""
 
 BASE_URL = "http://aminmuwafi-001-site35.itempurl.com"
 LOGIN_URL = f"{BASE_URL}/login"
@@ -22,10 +22,10 @@ SUPERADMIN_USER = {"email": "new.superadmin", "password": "123456"}
 
 # Test user created then deleted in user management test (unique so we can search)
 NEW_USER_FOR_MANAGEMENT_TEST = {
-    "user_name": "test.auto.admin109",
+    "user_name": "test.auto.admin79",
     "first_name": "Test",
     "last_name": "Automation",
-    "email": "test.auto.admin109@example.com",
+    "email": "test.auto.admin79@example.com",
     "password": "TestPass123!",
     "role": "Admin",
 }
@@ -34,10 +34,10 @@ PROJECT_FOR_NEW_USER = "Legal"
 
 # Data to set on the Update User (edit) page: new name, email, first/last name, role Agency, projects Sales Academy + Subscriptions, Active OFF
 UPDATED_USER_FOR_EDIT_TEST = {
-    "user_name": "test.auto.edited9",
+    "user_name": "test.auto.edited27",
     "first_name": "Edited",
     "last_name": "User",
-    "email": "test.auto.edited9@example.com",
+    "email": "test.auto.edited27@example.com",
     "role": "Agency",
 }
 # On edit: deselect this project, then select these
@@ -53,7 +53,7 @@ INVALID_EMAIL_FORMAT = "testuser.com"
 INVALID_PASSWORD = "wrongpassword123"
 ANY_PASSWORD = "anspassword123"
 
-# Moderator for ticketing tests (login then use Report a New Ticket on /issue)
+# Moderator for ticketing tests (login, then use Report a New Ticket on /issue)
 MODERATOR_TICKET_USER = {"email": "Abdulrahman", "password": "Abdnsour$0216191"}
 AGENT_TICKET_USER = {"email": "Abdulrahman-Agency", "password": "Abdnsour$0216191"}
 ISSUE_PAGE_URL = f"{BASE_URL}/issue"
@@ -61,7 +61,7 @@ ISSUE_CREATE_URL = f"{BASE_URL}/issue/create"
 # Create ticket form: Project dropdown and "Create on behalf of" selection
 TICKET_PROJECT = "abdulrahman-project"
 TICKET_CREATE_ON_BEHALF_OF = "Abdulrahman-Agency"
-TICKET_TITLE = "Automation Ticket21"
+TICKET_TITLE = "Automation Ticket97"
 TICKET_RELATED_TICKET = "test4"
 TICKET_CATEGORY = "Bug"
 TICKET_SEVERITY = "High"
@@ -94,8 +94,8 @@ NOTIFICATION_MESSAGE = "Automation notification message"
 # Project management test (moderator)
 PROJECT_URL = f"{BASE_URL}/admin/project"
 PROJECT_CREATE_URL = f"{BASE_URL}/admin/project/create"
-NEW_PROJECT_NAME = "Abdulrahman-project10"
-EDIT_PROJECT_NAME = "Abdulrahman-project11"
+NEW_PROJECT_NAME = "Abdulrahman-project96"
+EDIT_PROJECT_NAME = "Abdulrahman-project97"
 PROJECT_CLIENT_NAME = "QBS"
 PROJECT_ASSOCIATED_USERS_CREATE = ["Abdulrahman-Agency", "Abdulrahman-Admin"]
 PROJECT_USER_EMAIL = "automation.project@example.com"
