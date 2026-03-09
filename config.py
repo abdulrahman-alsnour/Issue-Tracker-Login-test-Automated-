@@ -52,3 +52,54 @@ MSG_COMPLETE_CAPTCHA = "Please complete CAPTCHA"
 INVALID_EMAIL_FORMAT = "testuser.com"
 INVALID_PASSWORD = "wrongpassword123"
 ANY_PASSWORD = "anspassword123"
+
+# Moderator for ticketing tests (login then use Report a New Ticket on /issue)
+MODERATOR_TICKET_USER = {"email": "Abdulrahman", "password": "Abdnsour$0216191"}
+AGENT_TICKET_USER = {"email": "Abdulrahman-Agency", "password": "Abdnsour$0216191"}
+ISSUE_PAGE_URL = f"{BASE_URL}/issue"
+ISSUE_CREATE_URL = f"{BASE_URL}/issue/create"
+# Create ticket form: Project dropdown and "Create on behalf of" selection
+TICKET_PROJECT = "abdulrahman-project"
+TICKET_CREATE_ON_BEHALF_OF = "Abdulrahman-Agency"
+TICKET_TITLE = "Automation Ticket21"
+TICKET_RELATED_TICKET = "test4"
+TICKET_CATEGORY = "Bug"
+TICKET_SEVERITY = "High"
+TICKET_DESCRIPTION = "Automation: description of the issue."
+TICKET_EXPECTED_BEHAVIOR = "Automation: expected behavior."
+TICKET_ADDITIONAL_NOTES = "Automation: additional notes."
+
+# Edit page: change Type, Severity, Status, Assignee, text areas, Related ticket
+TICKET_EDIT_TYPE = "CR"
+TICKET_EDIT_SEVERITY = "Medium"
+TICKET_EDIT_STATUS = "Solved"
+TICKET_EDIT_ASSIGNEE = "m.alsadi"
+TICKET_EDIT_DESCRIPTION = "anything"
+TICKET_EDIT_EXPECTED_BEHAVIOR = "anything"
+TICKET_EDIT_ADDITIONAL_NOTES = "anything"
+TICKET_EDIT_RELATED_TICKET = "test3"
+
+# Agent: close ticket (change status to Closed, add comment, submit comment, save)
+TICKET_AGENT_CLOSE_STATUS = "Closed"
+TICKET_AGENT_COMMENT = "anything"
+
+# Agent: report a new ticket (same fields as moderator, different title)
+TICKET_AGENT_TITLE = "Automation Ticket Agent4"
+
+# Notification automation test (moderator on /admin/notification)
+NOTIFICATION_URL = f"{BASE_URL}/admin/notification"
+NOTIFICATION_PROJECT = "abdulrahman-project"
+NOTIFICATION_MESSAGE = "Automation notification message"
+
+# Project management test (moderator)
+PROJECT_URL = f"{BASE_URL}/admin/project"
+PROJECT_CREATE_URL = f"{BASE_URL}/admin/project/create"
+NEW_PROJECT_NAME = "Abdulrahman-project10"
+EDIT_PROJECT_NAME = "Abdulrahman-project11"
+PROJECT_CLIENT_NAME = "QBS"
+PROJECT_ASSOCIATED_USERS_CREATE = ["Abdulrahman-Agency", "Abdulrahman-Admin"]
+PROJECT_USER_EMAIL = "automation.project@example.com"
+PROJECT_DESCRIPTION = "Automation: project description for testing."
+PROJECT_EDIT_DESELECT_USERS = ["Abdulrahman-Admin"]
+PROJECT_EDIT_SELECT_USERS = ["test.auto.admin107"]
+PROJECT_EDIT_DESCRIPTION = "Automation: edited description."

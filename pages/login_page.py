@@ -1,6 +1,7 @@
 """Page object for the login page."""
 
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -140,29 +141,38 @@ class LoginPage:
         return " ".join(texts) if texts else self.driver.page_source[:2000]
 
     def open_menu_if_present(self) -> bool:
-        """Click menu/user dropdown if present so Logout becomes visible. Returns True if clicked."""
+        """Click the menu button in the nav bar (nav div.menu / img[alt='menu']) so Sign out is visible."""
         selectors = [
-            (By.XPATH, "//*[contains(text(), 'Menu') or contains(., 'menu')]"),
-            (By.CSS_SELECTOR, "[aria-label='Menu'], [data-toggle='dropdown'], .navbar-toggler"),
-            (By.CSS_SELECTOR, "button[class*='menu'], .user-menu, [class*='dropdown']"),
+            (By.CSS_SELECTOR, "nav div.menu"),
+            (By.CSS_SELECTOR, "nav img[alt='menu']"),
+            (By.XPATH, "//nav//div[contains(@class,'menu')]"),
+            (By.XPATH, "//nav//img[@alt='menu']"),
+            (By.CSS_SELECTOR, "div.menu"),
+            (By.CSS_SELECTOR, "img[alt='menu']"),
         ]
         for by, value in selectors:
             try:
                 el = self.driver.find_element(by, value)
                 if el.is_displayed():
-                    el.click()
+                    self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
+                    self.driver.execute_script("arguments[0].click();", el)
                     return True
             except Exception:
                 continue
         return False
 
     def find_logout(self):
-        """Find and return logout button/link (e.g. in menu)."""
+        """Find the Sign out link in the opened menu (a.mobile-menu-link containing 'Sign out')."""
         selectors = [
+            (By.XPATH, "//a[contains(@class,'mobile-menu-link')][.//span[contains(.,'Sign out')]]"),
+            (By.XPATH, "//span[contains(.,'Sign out')]/ancestor::a[1]"),
+            (By.XPATH, "//li[contains(@class,'mobile-menu-item')]//a[.//span[contains(.,'Sign out')]]"),
+            (By.XPATH, "//*[normalize-space()='Sign out']/ancestor::a[1]"),
+            (By.LINK_TEXT, "Sign out"),
+            (By.XPATH, "//*[contains(., 'Sign out')]"),
             (By.XPATH, "//*[contains(text(), 'Logout') or contains(., 'Log out')]"),
             (By.LINK_TEXT, "Logout"),
             (By.LINK_TEXT, "Log out"),
-            (By.CSS_SELECTOR, "[href*='logout'], button[class*='logout']"),
         ]
         for by, value in selectors:
             try:
@@ -171,11 +181,19 @@ class LoginPage:
                     return el
             except Exception:
                 continue
-        raise AssertionError("Logout not found. Update selector or open menu first.")
+        raise AssertionError("Sign out not found. Open the nav menu first.")
 
     def logout(self, open_menu_first: bool = True):
-        """Click logout. If open_menu_first=True, tries to open menu (e.g. dropdown) first."""
+        """Open nav menu then click Sign out. Call only after you are back on the issue page."""
         if open_menu_first:
             self.open_menu_if_present()
-        self.find_logout().click()
-#test comment
+            self._wait.until(EC.element_to_be_clickable((By.XPATH, "//a[.//span[contains(.,'Sign out')]] | //*[contains(., 'Sign out')]")))
+        sign_out_el = self.find_logout()
+        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", sign_out_el)
+        try:
+            self.driver.execute_script("arguments[0].click();", sign_out_el)
+        except Exception:
+            try:
+                ActionChains(self.driver).move_to_element(sign_out_el).click().perform()
+            except Exception:
+                sign_out_el.click()
