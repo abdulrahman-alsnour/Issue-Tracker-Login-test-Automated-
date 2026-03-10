@@ -2,6 +2,7 @@
 
 import re
 import time
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
@@ -448,16 +449,25 @@ class IssuePage:
             pass
         search_input.send_keys(title)
 
-    def click_first_ticket_in_list(self, title: str, timeout: int = 10):
-        """Click the first table row that contains the given title (opens /issue/{id}/edit)."""
-        row = WebDriverWait(self.driver, timeout).until(
-            EC.element_to_be_clickable((By.XPATH, f"//tr[.//*[contains(normalize-space(.), '{title}')]]"))
-        )
-        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", row)
-        try:
-            self.driver.execute_script("arguments[0].click();", row)
-        except Exception:
-            row.click()
+    def click_first_ticket_in_list(self, title: str, timeout: int = 10, max_retries: int = 3):
+        """Click the first table row that contains the given title (opens /issue/{id}/edit).
+        Retries on StaleElementReferenceException when the table re-renders after search."""
+        xpath = f"//tr[.//*[contains(normalize-space(.), '{title}')]]"
+        for attempt in range(max_retries):
+            try:
+                row = WebDriverWait(self.driver, timeout).until(
+                    EC.element_to_be_clickable((By.XPATH, xpath))
+                )
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", row)
+                try:
+                    self.driver.execute_script("arguments[0].click();", row)
+                except Exception:
+                    row.click()
+                return
+            except StaleElementReferenceException:
+                if attempt == max_retries - 1:
+                    raise
+                time.sleep(0.5)
 
     def wait_for_issue_edit_page(self, timeout: int = 10):
         """Wait until URL matches /issue/{id}/edit."""
@@ -470,8 +480,43 @@ class IssuePage:
         self._select_dropdown_option_by_label(label_text, option_text)
 
     def select_edit_type(self, option_text: str):
-        """On edit page: change Type dropdown (e.g. CR)."""
-        self._select_edit_dropdown("Type", option_text)
+        """On edit page: change Type dropdown (e.g. CR). Tries multiple label variants and trigger approaches."""
+        time.sleep(0.5)
+        for label in ["Type", "Ticket Type", "Issue Type"]:
+            try:
+                trigger_xpath = (
+                    f"//*[contains(normalize-space(.), '{label}')]/following::*[contains(@class,'p-dropdown')][1]"
+                )
+                trigger = self._wait.until(EC.element_to_be_clickable((By.XPATH, trigger_xpath)))
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", trigger)
+                time.sleep(0.2)
+                try:
+                    inner = trigger.find_element(
+                        By.XPATH,
+                        ".//*[contains(@class,'p-dropdown-trigger') or @aria-label='dropdown trigger']"
+                    )
+                    if inner.is_displayed():
+                        trigger = inner
+                except Exception:
+                    pass
+                try:
+                    self.driver.execute_script("arguments[0].click();", trigger)
+                except Exception:
+                    ActionChains(self.driver).move_to_element(trigger).click().perform()
+                time.sleep(0.5)
+                self._select_option_from_open_panel(option_text)
+                return
+            except Exception:
+                continue
+        try:
+            edit_form = self.driver.find_element(By.XPATH, "//*[contains(., 'Update') or contains(., 'Edit')]/ancestor::form | //form[.//*[contains(@class,'p-dropdown')]]")
+            trigger = edit_form.find_element(By.XPATH, ".//*[contains(@class,'p-dropdown')][1]")
+            self._open_dropdown_trigger(trigger)
+            self._select_option_from_open_panel(option_text)
+            return
+        except Exception:
+            pass
+        raise AssertionError(f"Could not open Type dropdown to select '{option_text}'")
 
     def select_edit_severity(self, option_text: str):
         """On edit page: change Severity (e.g. Medium)."""

@@ -223,3 +223,27 @@ class NotificationPage:
             except Exception:
                 continue
         raise AssertionError("Viewed button/link not found on notification popup")
+
+    def click_check_later(self, timeout: int = 5) -> bool:
+        """
+        If the notification popup is visible, click 'Check Later' to dismiss it.
+        Returns True if clicked, False if popup/button not found (no notifications).
+        Use when agent logs in - popup may or may not appear.
+        """
+        for xpath in [
+            "//button[contains(., 'Check Later')]",
+            "//*[contains(@class,'btn')][contains(., 'Check Later')]",
+            "//*[normalize-space()='Check Later']",
+        ]:
+            try:
+                el = WebDriverWait(self.driver, timeout).until(
+                    EC.element_to_be_clickable((By.XPATH, xpath))
+                )
+                if el.is_displayed():
+                    self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
+                    self.driver.execute_script("arguments[0].click();", el)
+                    time.sleep(0.5)
+                    return True
+            except Exception:
+                continue
+        return False
