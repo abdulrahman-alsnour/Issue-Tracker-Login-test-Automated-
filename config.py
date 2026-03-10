@@ -79,7 +79,7 @@ ISSUE_CREATE_URL = f"{BASE_URL}/issue/create"
 
 TICKET_PROJECT = "abdulrahman-project"  # CHANGE: existing project name
 TICKET_CREATE_ON_BEHALF_OF = "Abdulrahman-Agency"  # CHANGE: existing agency user
-TICKET_TITLE = "Automation Ticket98"  # CHANGE: unique per run (avoid duplicate ticket)
+TICKET_TITLE = "Automation Ticket103"  # CHANGE: unique per run (avoid duplicate ticket)
 TICKET_RELATED_TICKET = "test4"  # CHANGE: existing ticket for relation
 TICKET_CATEGORY = "Bug"
 TICKET_SEVERITY = "High"
@@ -98,7 +98,7 @@ TICKET_EDIT_RELATED_TICKET = "test3"
 
 TICKET_AGENT_CLOSE_STATUS = "Closed"
 TICKET_AGENT_COMMENT = "anything"
-TICKET_AGENT_TITLE = "Automation Ticket Agent73"  # CHANGE: unique per run (agent creates 2nd ticket)
+TICKET_AGENT_TITLE = "Automation Ticket Agent74"  # CHANGE: unique per run (agent creates 2nd ticket)
 
 # =============================================================================
 # NOTIFICATION TESTS (test_notification.py)
