@@ -421,7 +421,7 @@ class IssuePage:
             submit_btn.click()
 
     def wait_for_all_tickets_page(self, timeout: int = 15):
-        """Wait until we're back on the issue list (URL has /issue but not /edit)."""
+        """Wait until we're back on the issue list (URL has /issue but not /edit) and search bar is ready."""
         def on_list_page(driver):
             url = driver.current_url or ""
             if "/edit" in url:
@@ -434,6 +434,19 @@ class IssuePage:
         WebDriverWait(self.driver, timeout).until(
             EC.presence_of_element_located((By.XPATH, "//*[contains(., 'All Tickets') or contains(., 'Search')]"))
         )
+        # Wait for search input - it may load after the header (avoids flaky failures)
+        for xpath in [
+            "//input[contains(@placeholder, 'Search') or @placeholder='Search']",
+            "//input[@type='search']",
+            "//input[contains(@placeholder, 'search')]",
+        ]:
+            try:
+                WebDriverWait(self.driver, timeout // 2).until(
+                    EC.presence_of_element_located((By.XPATH, xpath))
+                )
+                return
+            except Exception:
+                continue
 
     def search_ticket_by_title(self, title: str, timeout: int = 15):
         """Type the ticket title in the search bar to filter the list."""
