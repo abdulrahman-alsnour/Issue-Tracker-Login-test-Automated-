@@ -46,10 +46,10 @@ MANAGEMENT_USER_CREATE_URL = f"{BASE_URL}/admin/user/create"
 SUPERADMIN_USER = {"email": "new.superadmin", "password": "123456"}
 
 NEW_USER_FOR_MANAGEMENT_TEST = {
-    "user_name": "test.auto.admin83",  # CHANGE: unique per run (avoid "already exists")
+    "user_name": "test.auto.admin84",  # CHANGE: unique per run (avoid "already exists")
     "first_name": "Test",
     "last_name": "Automation",
-    "email": "test.auto.admin83@example.com",  # CHANGE: unique per run (match user_name)
+    "email": "test.auto.admin84@example.com",  # CHANGE: unique per run (match user_name)
     "password": "TestPass123!",
     "role": "Admin",
 }
@@ -57,10 +57,10 @@ NEW_USER_FOR_MANAGEMENT_TEST = {
 PROJECT_FOR_NEW_USER = "Legal"
 
 UPDATED_USER_FOR_EDIT_TEST = {
-    "user_name": "test.auto.edited32",  # CHANGE: unique per run (avoid "already exists")
+    "user_name": "test.auto.edited33",  # CHANGE: unique per run (avoid "already exists")
     "first_name": "Edited",
     "last_name": "User",
-    "email": "test.auto.edited32@example.com",  # CHANGE: unique per run (match user_name)
+    "email": "test.auto.edited33@example.com",  # CHANGE: unique per run (match user_name)
     "role": "Agency",
 }
 
@@ -79,7 +79,7 @@ ISSUE_CREATE_URL = f"{BASE_URL}/issue/create"
 
 TICKET_PROJECT = "abdulrahman-project"  # CHANGE: existing project name
 TICKET_CREATE_ON_BEHALF_OF = "Abdulrahman-Agency"  # CHANGE: existing agency user
-TICKET_TITLE = "Automation Ticket105"  # CHANGE: unique per run (avoid duplicate ticket)
+TICKET_TITLE = "Automation Ticket112"  # CHANGE: unique per run (avoid duplicate ticket)
 TICKET_RELATED_TICKET = "test4"  # CHANGE: existing ticket for relation
 TICKET_CATEGORY = "Bug"
 TICKET_SEVERITY = "High"
@@ -98,7 +98,7 @@ TICKET_EDIT_RELATED_TICKET = "test3"
 
 TICKET_AGENT_CLOSE_STATUS = "Closed"
 TICKET_AGENT_COMMENT = "anything"
-TICKET_AGENT_TITLE = "Automation Ticket Agent76"  # CHANGE: unique per run (agent creates 2nd ticket)
+TICKET_AGENT_TITLE = "Automation Ticket Agent86"  # CHANGE: unique per run (agent creates 2nd ticket)
 
 # =============================================================================
 # NOTIFICATION TESTS (test_notification.py)
@@ -115,8 +115,8 @@ NOTIFICATION_MESSAGE = "Automation notification message"  # CHANGE: unique per r
 PROJECT_URL = f"{BASE_URL}/admin/project"
 PROJECT_CREATE_URL = f"{BASE_URL}/admin/project/create"
 
-NEW_PROJECT_NAME = "Abdulrahman-project102"  # CHANGE: unique per run (avoid duplicate project)
-EDIT_PROJECT_NAME = "Abdulrahman-project103"  # CHANGE: unique per run (edit target)
+NEW_PROJECT_NAME = "Abdulrahman-project103"  # CHANGE: unique per run (avoid duplicate project)
+EDIT_PROJECT_NAME = "Abdulrahman-project104"  # CHANGE: unique per run (edit target)
 PROJECT_CLIENT_NAME = "QBS"  # CHANGE: existing client name
 PROJECT_ASSOCIATED_USERS_CREATE = ["Abdulrahman-Agency", "Abdulrahman-Admin"]  # CHANGE: existing users
 PROJECT_USER_EMAIL = "automation.project@example.com"  # CHANGE: unique per run if creating user
