@@ -475,12 +475,27 @@ class IssuePage:
 
     def click_first_ticket_in_list(self, title: str, timeout: int = 10, max_retries: int = 3):
         """Click the first table row that contains the given title (opens /issue/{id}/edit).
-        Retries on StaleElementReferenceException when the table re-renders after search."""
-        xpath = f"//tr[.//*[contains(normalize-space(.), '{title}')]]"
+        Tries link inside row first (more reliable for navigation), then row. Retries on StaleElementReferenceException."""
+        row_xpath = f"//tr[.//*[contains(normalize-space(.), '{title}')]]"
+        link_xpath = f"{row_xpath}//a[contains(@href,'issue')]"
         for attempt in range(max_retries):
             try:
+                # Prefer clicking the link - more reliable for navigation (especially for agent role)
+                try:
+                    link = WebDriverWait(self.driver, timeout // 2).until(
+                        EC.element_to_be_clickable((By.XPATH, link_xpath))
+                    )
+                    self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", link)
+                    try:
+                        self.driver.execute_script("arguments[0].click();", link)
+                    except Exception:
+                        link.click()
+                    return
+                except Exception:
+                    pass
+                # Fallback: click the row
                 row = WebDriverWait(self.driver, timeout).until(
-                    EC.element_to_be_clickable((By.XPATH, xpath))
+                    EC.element_to_be_clickable((By.XPATH, row_xpath))
                 )
                 self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", row)
                 try:
