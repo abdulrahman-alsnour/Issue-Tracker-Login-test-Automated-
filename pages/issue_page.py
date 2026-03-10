@@ -2,7 +2,7 @@
 
 import re
 import time
-from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
@@ -435,13 +435,24 @@ class IssuePage:
             EC.presence_of_element_located((By.XPATH, "//*[contains(., 'All Tickets') or contains(., 'Search')]"))
         )
 
-    def search_ticket_by_title(self, title: str, timeout: int = 10):
+    def search_ticket_by_title(self, title: str, timeout: int = 15):
         """Type the ticket title in the search bar to filter the list."""
-        search_input = WebDriverWait(self.driver, timeout).until(
-            EC.visibility_of_element_located(
-                (By.XPATH, "//input[contains(@placeholder, 'Search') or @placeholder='Search']")
-            )
-        )
+        # Try multiple selectors - app may use different placeholders
+        for xpath in [
+            "//input[contains(@placeholder, 'Search') or @placeholder='Search']",
+            "//input[@type='search']",
+            "//input[contains(@placeholder, 'search')]",
+            "//input[contains(@aria-label, 'Search') or contains(@aria-label, 'search')]",
+        ]:
+            try:
+                search_input = WebDriverWait(self.driver, timeout // 2).until(
+                    EC.visibility_of_element_located((By.XPATH, xpath))
+                )
+                break
+            except Exception:
+                continue
+        else:
+            raise TimeoutException(f"Search input not found within {timeout}s")
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", search_input)
         try:
             search_input.clear()
