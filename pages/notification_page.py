@@ -224,6 +224,56 @@ class NotificationPage:
                 continue
         raise AssertionError("Viewed button/link not found on notification popup")
 
+    def click_notification_icon(self, timeout: int = 10):
+        """Click the notification bell icon in the nav bar to open the notification dropdown."""
+        for xpath in [
+            "//*[contains(@class,'notification-container')]//img[contains(@src,'notification')]",
+            "//*[contains(@class,'notification-container')]",
+            "//img[@alt='notification']",
+            "//*[contains(@class,'notification')]//img",
+        ]:
+            try:
+                el = WebDriverWait(self.driver, timeout).until(
+                    EC.element_to_be_clickable((By.XPATH, xpath))
+                )
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
+                self.driver.execute_script("arguments[0].click();", el)
+                time.sleep(0.5)
+                return
+            except Exception:
+                continue
+        raise AssertionError("Notification icon not found in nav bar")
+
+    def get_notification_badge_count(self) -> int:
+        """Get the unread notification count from the badge (span.number-badge). Returns 0 if no badge."""
+        try:
+            badge = self.driver.find_element(By.CSS_SELECTOR, "span.number-badge")
+            if badge.is_displayed():
+                return int(badge.text.strip())
+        except Exception:
+            pass
+        return 0
+
+    def click_viewed_on_notification_dropdown(self, message_substring: str, timeout: int = 10):
+        """Click Viewed on the notification with the given message in the dropdown (opened by clicking notification icon)."""
+        for viewed_xpath in [
+            f"//span[contains(@class,'notification-message') and contains(., '{message_substring}')]/ancestor::*[.//button[contains(@class,'viewed-btn')]][1]//button[contains(@class,'viewed-btn')]",
+            f"//*[contains(., '{message_substring}')]/ancestor::*[.//button[contains(., 'Viewed')]][1]//button[contains(., 'Viewed')]",
+            f"//*[contains(., '{message_substring}')]/following::button[contains(@class,'viewed-btn')][1]",
+            f"//button[contains(@class,'viewed-btn')][ancestor::*[contains(., '{message_substring}')]]",
+        ]:
+            try:
+                el = WebDriverWait(self.driver, timeout).until(
+                    EC.element_to_be_clickable((By.XPATH, viewed_xpath))
+                )
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
+                self.driver.execute_script("arguments[0].click();", el)
+                time.sleep(0.5)
+                return
+            except Exception:
+                continue
+        raise AssertionError(f"Viewed button not found for notification '{message_substring}'")
+
     def click_check_later(self, timeout: int = 5) -> bool:
         """
         If the notification popup is visible, click 'Check Later' to dismiss it.

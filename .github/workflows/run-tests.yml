@@ -30,4 +30,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run all tests
-        run: pytest tests/test_ticketing.py tests/test_notification.py tests/test_auth.py tests/test_client_project.py tests/test_user_management.py -v --tb=short
+        run: pytest tests/test_auth.py tests/test_ticketing.py tests/test_admin_ticket.py tests/test_client_project.py tests/test_user_management.py tests/test_notification.py tests/test_admin_notification.py -v --tb=short

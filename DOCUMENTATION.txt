@@ -1,0 +1,936 @@
+================================================================================
+QBS ISSUE TRACKER - AUTOMATED TEST SUITE - FULL DOCUMENTATION
+================================================================================
+
+This document explains everything about the automated test project: structure,
+tech stack, what each file does, how tests work, and how to run them.
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+
+This is an end-to-end (E2E) automated test suite for the QBS Issue Tracker web
+application. The application is hosted at:
+  http://aminmuwafi-001-site35.itempurl.com
+
+The tests use Selenium WebDriver to control a real Chrome browser and simulate
+user actions: login, create tickets, edit tickets, send notifications, manage
+users and projects, etc.
+
+================================================================================
+2. TECH STACK
+================================================================================
+
+- Python 3.11          : Programming language
+- pytest               : Test framework (discovers and runs tests)
+- Selenium 4.15+       : Browser automation (controls Chrome)
+- webdriver-manager    : Automatically downloads the correct ChromeDriver
+
+The application under test appears to be built with:
+- Angular (based on _ngcontent attributes in the DOM)
+- PrimeNG (UI components: p-dropdown, p-calendar, p-multiselect, etc.)
+
+================================================================================
+3. PROJECT STRUCTURE
+================================================================================
+
+issue-tracker-login-test-automated/
+├── config.py              # All configuration and test data
+├── conftest.py            # Pytest fixtures (driver, etc.)
+├── requirements.txt       # Python dependencies
+├── .github/
+│   └── workflows/
+│       └── run-tests.yml  # GitHub Actions CI pipeline
+├── pages/                 # Page Object Model (POM) - one class per page/section
+│   ├── login_page.py
+│   ├── issue_page.py
+│   ├── notification_page.py
+│   ├── project_page.py
+│   ├── client_page.py
+│   └── user_management_page.py
+└── tests/                 # Test files (one per feature area)
+    ├── test_auth.py
+    ├── test_ticketing.py
+    ├── test_admin_ticket.py
+    ├── test_notification.py
+    ├── test_admin_notification.py
+    ├── test_client_project.py
+    └── test_user_management.py
+
+================================================================================
+4. FILE-BY-FILE EXPLANATION
+================================================================================
+
+--------------------------------------------------------------------------------
+4.1 config.py
+--------------------------------------------------------------------------------
+
+Central configuration file. Contains:
+- BASE_URL: The application URL
+- All test data: user credentials, ticket titles, project names, messages,
+  expected error messages, etc.
+
+Values marked with # CHANGE must be updated per run to avoid "already exists"
+errors when creating entities (tickets, users, projects, notifications).
+
+Structure: Sections are grouped by test file (AUTH TESTS, TICKETING TESTS,
+ADMIN TICKET TESTS, etc.).
+
+--------------------------------------------------------------------------------
+4.2 conftest.py
+--------------------------------------------------------------------------------
+
+Pytest fixtures - shared setup for tests.
+
+- driver fixture: Creates a Chrome WebDriver instance for each test.
+  - HEADLESS env var: "1" (default) = run Chrome headless (no window).
+  - HEADLESS="0" = run Chrome visibly so you can watch the test.
+  - Each test gets a fresh browser; browser is closed after the test.
+
+- login_url fixture: Returns the login page URL.
+
+--------------------------------------------------------------------------------
+4.3 requirements.txt
+--------------------------------------------------------------------------------
+
+Python dependencies:
+- selenium>=4.15.0
+- pytest>=7.4.0
+- webdriver-manager>=4.0.0
+
+Install with: pip install -r requirements.txt
+
+--------------------------------------------------------------------------------
+4.4 pages/login_page.py - LoginPage
+--------------------------------------------------------------------------------
+
+Page object for the login page. Handles:
+- open(return_url): Navigate to login page, optionally with returnUrl param
+- enter_email, enter_password: Fill form fields
+- click_login: Submit the form (uses JavaScript click for reliability)
+- login(email, password): Full login flow
+- wait_for_redirect_to_issue: Wait until URL contains /issue after login
+- logout(open_menu_first): Open nav menu, click Sign out
+- open_menu_if_present: Click hamburger menu to open nav
+- get_validation_messages: Get error text on the page
+- is_captcha_visible: Check if CAPTCHA is shown
+
+The app uses a single login form for both customer and support users.
+
+--------------------------------------------------------------------------------
+4.5 pages/issue_page.py - IssuePage
+--------------------------------------------------------------------------------
+
+Page object for the Issue Tracker (/issue, /issue/create, /issue/{id}/edit).
+
+CREATE TICKET FLOW:
+- click_report_new_ticket: Click "Report a New Ticket"
+- wait_for_issue_create_page: Wait for create form
+- select_project: Select project from dropdown
+- toggle_create_on_behalf_of, select_create_on_behalf_of: For moderator
+- fill_ticket_title: Enter ticket title
+- toggle_related_ticket, select_related_ticket: Related ticket
+- select_category, select_severity: Step 2
+- fill_description, fill_expected_behavior: Step 3
+- fill_additional_notes: Notes
+- click_next: Navigate between steps
+- click_submit: Submit the form
+
+TICKET LIST:
+- wait_for_all_tickets_page: Wait for URL /issue (not /edit)
+- search_ticket_by_title: Type in search bar to filter
+- click_filter_button: Open filter panel (filter button, not sort)
+- select_filter_category, select_filter_severity, select_filter_status
+- select_filter_date: Select date in calendar
+- click_apply_filters: Apply filters
+- click_first_ticket_in_list: Click row/link to open edit page
+
+EDIT TICKET:
+- wait_for_issue_edit_page: Wait for URL /issue/{id}/edit
+- select_edit_type, select_edit_severity, select_edit_status
+- select_edit_assignee, fill_edit_description, etc.
+- fill_edit_comment: Fill comment textarea (id=newComment)
+- click_submit_comment: Submit the comment
+- click_save_changes: Save the ticket
+
+Uses PrimeNG dropdowns, toggles, and calendar. Uses retry logic for stale
+elements when the table re-renders after search.
+
+--------------------------------------------------------------------------------
+4.6 pages/notification_page.py - NotificationPage
+--------------------------------------------------------------------------------
+
+Page object for /admin/notification and the nav bar notification dropdown.
+
+ADMIN NOTIFICATION PAGE:
+- open_notification_page(url): Navigate to notification page
+- click_new_notification: Open "Send a Notification" form
+- wait_for_send_notification_form
+- select_project: Select project from dropdown
+- fill_message: Fill message textarea
+- toggle_show_on_popup: Turn Show on popup on/off
+- click_save: Save the notification
+
+NAV BAR NOTIFICATION (after login as agent):
+- click_notification_icon: Click bell icon to open dropdown
+- get_notification_badge_count: Get unread count from span.number-badge
+- click_viewed_on_notification_dropdown: Click Viewed on a notification by message
+- click_viewed_on_notification_popup: For popup-style notifications
+- wait_for_notification_popup_visible: Wait for popup
+- click_check_later: Dismiss popup if present
+
+--------------------------------------------------------------------------------
+4.7 pages/project_page.py - ProjectPage
+--------------------------------------------------------------------------------
+
+Page object for /admin/project. Handles:
+- Create new project
+- Edit project (name, client, users, description, active toggle)
+- Search projects
+- Show inactive projects
+- click_first_project_in_list
+
+--------------------------------------------------------------------------------
+4.8 pages/client_page.py - ClientPage
+--------------------------------------------------------------------------------
+
+Page object for creating new clients (used when creating projects).
+
+--------------------------------------------------------------------------------
+4.9 pages/user_management_page.py - UserManagementPage
+--------------------------------------------------------------------------------
+
+Page object for /admin/user. Handles:
+- Create new user
+- Edit user (name, email, role, projects)
+- Search users
+
+--------------------------------------------------------------------------------
+4.10 tests/test_auth.py
+--------------------------------------------------------------------------------
+
+Authentication tests:
+- TC_AUTH_001: Customer login with valid credentials
+- TC_AUTH_002: Support/Admin login
+- TC_AUTH_003: Wrong password shows error
+- TC_AUTH_004: Invalid email format
+- TC_AUTH_005: Blank email validation
+- TC_AUTH_006: Blank password validation
+- TC_AUTH_007: Both fields empty
+- TC_AUTH_008: Login without CAPTCHA
+- TC_AUTH_009: CAPTCHA not shown for support
+- TC_AUTH_011: Protected page redirects to login when not logged in
+- TC_AUTH_012: Session persists after refresh
+
+--------------------------------------------------------------------------------
+4.11 tests/test_ticketing.py
+--------------------------------------------------------------------------------
+
+Full ticketing flow:
+1. Login as moderator
+2. Create ticket (project, create on behalf of, title, related ticket,
+   category, severity, description, notes)
+3. Search for ticket, click to edit
+4. Edit ticket (type, severity, status, assignee, description, etc.)
+5. Save, logout
+6. Login as agent
+7. Search for ticket, click to edit
+8. Change status to Closed, add comment, submit comment, save
+9. Create a second ticket as agent (simpler form)
+
+--------------------------------------------------------------------------------
+4.12 tests/test_admin_ticket.py
+--------------------------------------------------------------------------------
+
+Admin ticket flow:
+1. Login as admin
+2. Create ticket (project, title, related ticket, category, severity, etc.)
+   - No "Create on behalf of" (admin form is simpler)
+3. Use filters (category, severity, status Open, date) to find the ticket
+4. Click ticket to edit
+5. Change status to Solved, add comment "solved and waiting for QA to confirm"
+6. Submit comment, save changes
+
+--------------------------------------------------------------------------------
+4.13 tests/test_notification.py
+--------------------------------------------------------------------------------
+
+Moderator notification flow:
+1. Login as moderator
+2. Go to /admin/notification
+3. Create notification (project, message, Show on popup ON)
+4. Save
+5. Logout, login as agent
+6. Verify notification popup is visible
+7. Click Viewed on popup
+
+--------------------------------------------------------------------------------
+4.14 tests/test_admin_notification.py
+--------------------------------------------------------------------------------
+
+Admin notification flow:
+1. Login as admin
+2. Go to /admin/notification
+3. Create notification (project, message, Show on popup OFF)
+4. Save
+5. Logout, login as agent
+6. Click notification icon in nav bar
+7. Click Viewed on "testing message" notification
+8. Verify badge count decreases (e.g. 1 -> 0)
+
+--------------------------------------------------------------------------------
+4.15 tests/test_client_project.py
+--------------------------------------------------------------------------------
+
+Project management flow:
+1. Login as moderator
+2. Create new project (name, client, users, description)
+3. Edit project (change name, users, description, set inactive)
+4. Show inactive, search, verify project appears
+
+--------------------------------------------------------------------------------
+4.16 tests/test_user_management.py
+--------------------------------------------------------------------------------
+
+User management flow:
+1. Login as superadmin
+2. Create new user
+3. Edit user (change name, email, role, projects)
+4. Delete user
+
+--------------------------------------------------------------------------------
+4.17 .github/workflows/run-tests.yml
+--------------------------------------------------------------------------------
+
+GitHub Actions workflow. Runs on push to main branch.
+
+Steps:
+1. Checkout repository
+2. Set up Python 3.11
+3. Install Chrome (Linux)
+4. pip install -r requirements.txt
+5. Run all tests in order: ticketing, admin_ticket, notification,
+   admin_notification, auth, client_project, user_management
+
+================================================================================
+5. HOW TESTS WORK
+
+--------------------------------------------------------------------------------
+5.1 Page Object Model (POM)
+--------------------------------------------------------------------------------
+
+Each page or major section of the app has a Python class. The class:
+- Receives the WebDriver (browser) and base URL in __init__
+- Exposes methods for user actions (click, fill, select)
+- Hides the low-level Selenium (find element, XPath, etc.)
+
+Benefits: Tests are readable; if the UI changes, update the page object, not
+every test.
+
+--------------------------------------------------------------------------------
+5.2 Pytest Fixtures
+--------------------------------------------------------------------------------
+
+- driver: Injected into tests that need a browser. Created by conftest.py.
+- logged_in_moderator, logged_in_admin: Fixtures that log in and return driver.
+- login_page: Fixture that opens login page and returns LoginPage instance.
+
+--------------------------------------------------------------------------------
+5.3 Test Flow Example
+--------------------------------------------------------------------------------
+
+test_create_ticket_by_admin:
+1. logged_in_admin fixture runs: opens login, logs in as admin, waits for /issue
+2. Test receives driver
+3. IssuePage(driver, BASE_URL) - create page object
+4. issue_page.click_report_new_ticket() - page object finds the button, clicks
+5. issue_page.select_project(...) - opens dropdown, selects option
+6. ... more steps ...
+7. issue_page.click_apply_filters()
+8. issue_page.click_first_ticket_in_list(ADMIN_TICKET_TITLE)
+9. ... edit, save ...
+10. Test ends; driver fixture tears down (browser.quit())
+
+--------------------------------------------------------------------------------
+5.4 Waits and Timeouts
+--------------------------------------------------------------------------------
+
+Selenium uses explicit waits (WebDriverWait) to wait for elements. The app
+uses Angular/PrimeNG, so elements may load asynchronously. We wait for:
+- Element visibility
+- Element to be clickable
+- URL to change
+
+time.sleep() is used sparingly (e.g. after submit to let page settle).
+
+--------------------------------------------------------------------------------
+5.5 Retry Logic
+--------------------------------------------------------------------------------
+
+click_first_ticket_in_list retries on StaleElementReferenceException because
+the table can re-render after search, making the previous element reference
+invalid.
+
+--------------------------------------------------------------------------------
+5.6 JavaScript Clicks
+--------------------------------------------------------------------------------
+
+We often use driver.execute_script("arguments[0].click();", element) instead
+of element.click() because:
+- More reliable in CI (headless)
+- Avoids "element intercepted" errors
+- Works when normal click is blocked
+
+================================================================================
+6. RUNNING TESTS
+================================================================================
+
+Run all tests:
+  pytest tests/ -v
+
+Run a specific test file:
+  pytest tests/test_admin_ticket.py -v
+
+Run a specific test:
+  pytest tests/test_admin_ticket.py::test_create_ticket_by_admin -v
+
+Run with visible browser (see what happens):
+  HEADLESS=0 pytest tests/test_admin_ticket.py -v
+
+  (PowerShell: $env:HEADLESS = "0"; pytest ...)
+
+Short traceback on failure:
+  pytest tests/ -v --tb=short
+
+================================================================================
+7. CONFIG VALUES TO CHANGE PER RUN
+================================================================================
+
+To avoid "already exists" errors, update these in config.py before each run:
+- user_name, email in NEW_USER_FOR_MANAGEMENT_TEST and UPDATED_USER_FOR_EDIT_TEST
+- TICKET_TITLE, TICKET_AGENT_TITLE, ADMIN_TICKET_TITLE
+- NEW_PROJECT_NAME, EDIT_PROJECT_NAME
+- NOTIFICATION_MESSAGE, ADMIN_NOTIFICATION_MESSAGE
+
+================================================================================
+8. APPLICATION ROLES
+================================================================================
+
+- Customer: Limited access, project-specific
+- Support/Admin: Full access
+- Moderator: Can create tickets on behalf of others, create notifications
+- Agent: Can create tickets (simpler form), edit tickets, view notifications
+- Admin: Similar to moderator, can create tickets without "on behalf of"
+- Superadmin: User management
+
+================================================================================
+9. KEY TECHNICAL DETAILS
+================================================================================
+
+- The app uses PrimeNG (p-dropdown, p-calendar, p-multiselect). We target
+  these by class, placeholder, or label text.
+- Filter button vs Sort button: Both have class "filter-group". We target the
+  filter by img src containing "filters-group".
+- Comment textarea: id="newComment", formcontrolname="newComment". We use
+  execute_script to set value for speed.
+- Notification badge: span.number-badge shows unread count.
+- Viewed button: button.viewed-btn in the notification dropdown.
+
+================================================================================
+10. DETAILED TEST EXPLANATIONS (LINE-BY-LINE)
+================================================================================
+
+For each test: workflow summary, fixtures used, and line-by-line explanation.
+
+--------------------------------------------------------------------------------
+10.1 AUTH TESTS (test_auth.py)
+--------------------------------------------------------------------------------
+
+FIXTURE: login_page
+  - Depends on: driver, login_url
+  - Creates LoginPage(driver, BASE_URL), calls page.open(return_url=None)
+  - Opens http://.../login and returns the LoginPage instance
+
+--- TC_AUTH_001: Customer login with valid credentials ---
+
+WORKFLOW: Customer logs in with valid credentials; app redirects to /issue.
+
+LINE-BY-LINE:
+  @pytest.mark.parametrize("user", CUSTOMER_USERS[:1], ids=["client1.project1"])
+    → Runs test once with first customer: {"email":"client1.project2","password":"123456"}
+
+  def test_TC_AUTH_001_customer_login_valid_credentials(login_page, user):
+    → Test receives login_page (fixture) and user (from parametrize)
+
+  login_page.login(user["email"], user["password"])
+    → Calls LoginPage.login("client1.project2", "123456")
+    → Inside: enter_email, enter_password, click_login (fills form, submits)
+
+  assert login_page.wait_for_redirect_to_issue(timeout=15), (...)
+    → Waits up to 15s for URL to contain /issue. Fails with message if timeout.
+
+  current_url = login_page.get_current_url()
+    → Gets current URL (e.g. http://.../issue)
+
+  assert "/issue" in current_url, (...)
+    → Verifies URL contains /issue. Double-check after wait.
+
+--- TC_AUTH_002: Support/Admin user login ---
+
+WORKFLOW: Support user logs in; should redirect to /issue.
+
+LINE-BY-LINE:
+  @pytest.mark.parametrize("user", SUPPORT_USERS, ids=[...])
+    → Runs test twice: once per SUPPORT_USERS (new.superadmin, admin.project1)
+
+  login_page.login(user["email"], user["password"])
+    → Same login flow as TC_AUTH_001
+
+  assert login_page.wait_for_redirect_to_issue(timeout=15), (...)
+    → Verifies redirect to /issue
+
+--- TC_AUTH_003: Wrong password ---
+
+WORKFLOW: User enters wrong password; stays on login, sees error message.
+
+LINE-BY-LINE:
+  login_page.login(user["email"], INVALID_PASSWORD)
+    → Submits with wrong password ("wrongpassword123")
+
+  assert "login" in login_page.get_current_url().lower()
+    → User must still be on login page (no redirect)
+
+  assert MSG_INVALID_CREDENTIALS in ... or "invalid" in ...
+    → Error message must contain "Invalid email or password" or "invalid"
+
+--- TC_AUTH_004: Invalid email format ---
+
+WORKFLOW: Invalid email format shows validation; login not submitted.
+
+LINE-BY-LINE:
+  login_page.enter_email(INVALID_EMAIL_FORMAT)
+    → Types "testuser.com" (no @)
+
+  login_page.enter_password(ANY_PASSWORD)
+  login_page.click_login()
+    → Submits form
+
+  assert "login" in login_page.get_current_url().lower()
+    → Stays on login page
+
+  assert "email" in login_page.get_validation_messages().lower()
+    → Validation message mentions email
+
+--- TC_AUTH_005: Blank email ---
+
+WORKFLOW: Blank email shows required validation.
+
+LINE-BY-LINE:
+  login_page.enter_password(ANY_PASSWORD)
+    → Only password filled, email empty
+
+  login_page.click_login_force()
+    → Force click (button may be disabled; force bypasses that)
+
+  assert "login" in ... and ("required" or "username" or "email" in msg)
+    → Stays on login, validation mentions required/username/email
+
+--- TC_AUTH_006: Blank password ---
+
+WORKFLOW: Blank password shows validation.
+
+LINE-BY-LINE:
+  login_page.enter_email(CUSTOMER_USERS[0]["email"])
+  login_page.click_login_force()
+  assert "login" in ... and ("required" or "password" in msg)
+
+--- TC_AUTH_007: Both fields empty ---
+
+WORKFLOW: Both empty; required messages shown.
+
+LINE-BY-LINE:
+  login_page.click_login_force()
+    → Submit with both fields empty
+
+  assert "required" or "username" or "password" or "email" in msg
+
+--- TC_AUTH_008: Login without CAPTCHA ---
+
+WORKFLOW: With CAPTCHA disabled, customer can login without CAPTCHA.
+
+LINE-BY-LINE:
+  user = CUSTOMER_USERS[0]
+  login_page.login(user["email"], user["password"])
+  assert login_page.wait_for_redirect_to_issue(timeout=15)
+    → Same as TC_AUTH_001; verifies login works without CAPTCHA
+
+--- TC_AUTH_009: CAPTCHA not shown on login ---
+
+WORKFLOW: Login form does not display CAPTCHA.
+
+LINE-BY-LINE:
+  assert not login_page.is_captcha_visible()
+    → is_captcha_visible() returns False (no CAPTCHA element found)
+
+--- TC_AUTH_011: Protected page redirects to login ---
+
+WORKFLOW: Unauthenticated user opening /issue is redirected to login.
+
+LINE-BY-LINE:
+  login_page.driver.get(PROTECTED_PAGE_URL)
+    → Navigate directly to /issue (no login)
+
+  assert "login" in ... or "unauthorized" in login_page.get_page_source().lower()
+    → Must redirect to login or show unauthorized
+
+--- TC_AUTH_012: Session persists after refresh ---
+
+WORKFLOW: User stays logged in after page refresh.
+
+LINE-BY-LINE:
+  login_page.login(...)
+  login_page.wait_for_redirect_to_issue(timeout=15)
+    → Login and wait for /issue
+
+  login_page.driver.refresh()
+    → Refresh the page
+
+  login_page.driver.get(PROTECTED_PAGE_URL)
+    → Navigate to /issue again
+
+  assert "login" not in login_page.get_current_url().lower()
+    → Should still be logged in (URL is /issue, not /login)
+
+--------------------------------------------------------------------------------
+10.2 TICKETING TEST (test_ticketing.py)
+--------------------------------------------------------------------------------
+
+FIXTURE: logged_in_moderator
+  - Opens login, logs in as MODERATOR_TICKET_USER, waits for /issue
+  - Returns driver
+
+--- test_moderator_login_and_click_report_new_ticket ---
+
+WORKFLOW: Moderator creates ticket → edits → saves → logs out → Agent logs in
+→ edits ticket (Closed, comment) → saves → Agent creates second ticket.
+
+LINE-BY-LINE:
+  driver = logged_in_moderator
+    → Receives driver from fixture (already logged in as moderator)
+
+  assert "/issue" in driver.current_url
+    → Verify we're on issue page
+
+  issue_page = IssuePage(driver, BASE_URL)
+    → Create IssuePage instance
+
+  issue_page.wait_for_issue_page(timeout=5)
+    → Wait for "Report a New Ticket" or "Issue Tracker" to be present
+
+  issue_page.click_report_new_ticket()
+    → Click "Report a New Ticket" button
+
+  issue_page.wait_for_issue_create_page(timeout=10, pause_seconds=5)
+    → Wait for URL /issue/create, then pause 5 seconds for form to load
+
+  issue_page.select_project(TICKET_PROJECT)
+  issue_page.toggle_create_on_behalf_of(on=True)
+  issue_page.select_create_on_behalf_of(TICKET_CREATE_ON_BEHALF_OF)
+    → Step 1: Project, enable "Create on behalf of", select agency
+
+  issue_page.fill_ticket_title(TICKET_TITLE)
+  issue_page.toggle_related_ticket(on=True)
+  issue_page.select_related_ticket(TICKET_RELATED_TICKET)
+  issue_page.click_next(timeout=15)
+    → Title, related ticket, next
+
+  issue_page.select_category(TICKET_CATEGORY)
+  issue_page.select_severity(TICKET_SEVERITY)
+  issue_page.click_next(timeout=15)
+    → Step 2: Category, Severity, next
+
+  issue_page.fill_description(...)
+  issue_page.fill_expected_behavior(...)
+  issue_page.click_next(timeout=15)
+  issue_page.click_next(timeout=15)  # skip screenshot
+  issue_page.fill_additional_notes(...)
+  issue_page.click_next(timeout=15)
+  issue_page.click_submit(timeout=15)
+    → Step 3: Description, expected behavior, skip screenshot, notes, submit
+
+  issue_page.wait_for_all_tickets_page(timeout=15)
+    → Wait for redirect to ticket list (URL /issue, not /edit)
+
+  issue_page.search_ticket_by_title(TICKET_TITLE)
+  issue_page.click_first_ticket_in_list(TICKET_TITLE, timeout=10)
+  issue_page.wait_for_issue_edit_page(timeout=10)
+    → Search, click ticket, wait for edit page
+
+  issue_page.select_edit_type(...)
+  issue_page.select_edit_severity(...)
+  ... (all edit fields)
+  issue_page.click_save_changes(timeout=15)
+    → Edit ticket, save
+
+  issue_page.wait_for_all_tickets_page(timeout=15)
+  login = LoginPage(driver, BASE_URL)
+  login.logout(open_menu_first=True)
+  WebDriverWait(driver, 10).until(EC.url_contains("/login"))
+    → Wait for list, open menu, click Sign out, wait for /login
+
+  login.open(return_url="/issue")
+  login.login(AGENT_TICKET_USER["email"], AGENT_TICKET_USER["password"])
+  login.wait_for_redirect_to_issue(timeout=15)
+    → Login as agent
+
+  issue_page.wait_for_all_tickets_page(timeout=10)
+  issue_page.search_ticket_by_title(TICKET_TITLE)
+  time.sleep(2)
+  issue_page.click_first_ticket_in_list(TICKET_TITLE, timeout=10)
+  issue_page.wait_for_issue_edit_page(timeout=15)
+    → Agent: find ticket, click, open edit
+
+  issue_page.select_edit_status(TICKET_AGENT_CLOSE_STATUS)
+  issue_page.fill_edit_comment(TICKET_AGENT_COMMENT)
+  issue_page.click_submit_comment(timeout=8)
+  issue_page.click_save_changes(timeout=15)
+    → Set status Closed, add comment, submit comment, save
+
+  issue_page.wait_for_all_tickets_page(timeout=25)
+  time.sleep(3)
+  issue_page.wait_for_issue_page(timeout=5)
+  issue_page.click_report_new_ticket()
+  ... (create second ticket as agent - simpler form, no Create on behalf of)
+    → Agent creates a second ticket (TICKET_AGENT_TITLE)
+
+--------------------------------------------------------------------------------
+10.3 ADMIN TICKET TEST (test_admin_ticket.py)
+--------------------------------------------------------------------------------
+
+FIXTURE: logged_in_admin
+  - Logs in as ADMIN_TICKET_USER (Abdulrahman-Admin), waits for /issue
+
+--- test_create_ticket_by_admin ---
+
+WORKFLOW: Admin creates ticket → uses filters to find it → edits (Solved,
+comment) → saves.
+
+LINE-BY-LINE:
+  driver = logged_in_admin
+  assert "/issue" in driver.current_url
+  issue_page = IssuePage(driver, BASE_URL)
+  issue_page.wait_for_issue_page(timeout=5)
+  issue_page.click_report_new_ticket()
+  issue_page.wait_for_issue_create_page(timeout=10, pause_seconds=5)
+    → Same as ticketing: create ticket (no Create on behalf of)
+
+  issue_page.select_project(TICKET_PROJECT)
+  issue_page.fill_ticket_title(ADMIN_TICKET_TITLE)
+  ... (rest of create flow)
+  issue_page.click_submit(timeout=15)
+  issue_page.wait_for_all_tickets_page(timeout=15)
+    → Create ticket, wait for list
+
+  issue_page.click_filter_button()
+  issue_page.select_filter_category(TICKET_CATEGORY)
+  issue_page.select_filter_severity(TICKET_SEVERITY)
+  issue_page.select_filter_status("Open")
+  issue_page.select_filter_date(date.today())
+  issue_page.click_apply_filters()
+  time.sleep(2)
+    → Open filter panel, set Category, Severity, Status Open, today's date,
+      apply, wait 2 sec for table to update
+
+  issue_page.click_first_ticket_in_list(ADMIN_TICKET_TITLE, timeout=10)
+  issue_page.wait_for_issue_edit_page(timeout=15)
+  issue_page.select_edit_status(ADMIN_TICKET_EDIT_STATUS)
+  issue_page.fill_edit_comment(ADMIN_TICKET_EDIT_COMMENT)
+  issue_page.click_submit_comment(timeout=8)
+  issue_page.click_save_changes(timeout=15)
+  issue_page.wait_for_all_tickets_page(timeout=25)
+    → Click ticket, edit (Solved, comment), save, wait for list
+
+--------------------------------------------------------------------------------
+10.4 NOTIFICATION TEST (test_notification.py)
+--------------------------------------------------------------------------------
+
+FIXTURE: logged_in_moderator
+
+--- test_moderator_send_notification_agent_views ---
+
+WORKFLOW: Moderator creates notification (Show on popup ON) → logout → Agent
+logs in → popup appears → click Viewed.
+
+LINE-BY-LINE:
+  driver = logged_in_moderator
+  notification_page = NotificationPage(driver, BASE_URL)
+  notification_page.open_notification_page(NOTIFICATION_URL)
+    → Navigate to /admin/notification
+
+  notification_page.click_new_notification()
+  notification_page.wait_for_send_notification_form()
+    → Open "Send a Notification" form
+
+  notification_page.select_project(NOTIFICATION_PROJECT)
+  notification_page.fill_message(NOTIFICATION_MESSAGE)
+  notification_page.toggle_show_on_popup(on=True)
+  notification_page.click_save()
+    → Select project, fill message, enable Show on popup, save
+
+  time.sleep(2)
+  assert "notification" in driver.current_url.lower()
+    → Stay on notification page after save
+
+  login.logout(open_menu_first=True)
+  WebDriverWait(driver, 10).until(EC.url_contains("/login"))
+  login.open(return_url="/issue")
+  login.login(AGENT_TICKET_USER["email"], AGENT_TICKET_USER["password"])
+  login.wait_for_redirect_to_issue(timeout=15)
+    → Logout, login as agent
+
+  time.sleep(2)
+  assert notification_page.wait_for_notification_popup_visible(
+      NOTIFICATION_MESSAGE, timeout=15
+  )
+    → Wait for popup containing NOTIFICATION_MESSAGE (Show on popup was ON)
+
+  notification_page.click_viewed_on_notification_popup(NOTIFICATION_MESSAGE)
+    → Click Viewed on the popup
+
+--------------------------------------------------------------------------------
+10.5 ADMIN NOTIFICATION TEST (test_admin_notification.py)
+--------------------------------------------------------------------------------
+
+FIXTURE: logged_in_admin
+
+--- test_admin_creates_notification ---
+
+WORKFLOW: Admin creates notification (Show on popup OFF) → logout → Agent
+logs in → click notification icon → click Viewed → verify badge decreases.
+
+LINE-BY-LINE:
+  driver = logged_in_admin
+  notification_page = NotificationPage(driver, BASE_URL)
+  notification_page.open_notification_page(NOTIFICATION_URL)
+  notification_page.click_new_notification()
+  notification_page.wait_for_send_notification_form()
+  notification_page.select_project(NOTIFICATION_PROJECT)
+  notification_page.fill_message(ADMIN_NOTIFICATION_MESSAGE)
+  notification_page.toggle_show_on_popup(on=False)
+  notification_page.click_save()
+    → Create notification with Show on popup OFF (no popup on agent login)
+
+  login.logout(...)
+  login.login(AGENT_TICKET_USER["email"], ...)
+  login.wait_for_redirect_to_issue(timeout=15)
+  time.sleep(2)
+    → Logout, login as agent
+
+  notification_page.click_notification_icon()
+    → Click bell icon in nav bar to open dropdown
+
+  badge_before = notification_page.get_notification_badge_count()
+  assert badge_before >= 1
+    → Get unread count from span.number-badge; must be at least 1
+
+  notification_page.click_viewed_on_notification_dropdown(ADMIN_NOTIFICATION_MESSAGE)
+    → Click Viewed on "testing message" notification in dropdown
+
+  time.sleep(1)
+  badge_after = notification_page.get_notification_badge_count()
+  assert badge_after == badge_before - 1
+    → Badge must decrease by 1 (e.g. 1 → 0)
+
+--------------------------------------------------------------------------------
+10.6 CLIENT/PROJECT TEST (test_client_project.py)
+--------------------------------------------------------------------------------
+
+FIXTURE: logged_in_moderator
+
+--- test_moderator_create_and_edit_project ---
+
+WORKFLOW: Create project → edit → set inactive → show inactive → verify in table.
+
+LINE-BY-LINE:
+  project_page = ProjectPage(driver, BASE_URL)
+  project_page.open_projects_page(PROJECT_URL)
+  project_page.click_new_project()
+  project_page.wait_for_create_project_form()
+  project_page.fill_project_name(NEW_PROJECT_NAME)
+  project_page.select_client(PROJECT_CLIENT_NAME)
+  project_page.select_associated_users(PROJECT_ASSOCIATED_USERS_CREATE)
+  project_page.fill_user_email(PROJECT_USER_EMAIL)
+  project_page.fill_description(PROJECT_DESCRIPTION)
+  project_page.toggle_active(on=True)
+  project_page.click_save()
+    → Create project with name, client, users, email, description, Active ON
+
+  time.sleep(2)
+  project_page.wait_back_on_projects_list(projects_url=PROJECT_URL)
+  project_page.search_project(NEW_PROJECT_NAME)
+  project_page.click_first_project_in_list(NEW_PROJECT_NAME)
+  project_page.wait_for_edit_project_page()
+    → Wait for list, search, click to edit
+
+  project_page.fill_edit_project_name(EDIT_PROJECT_NAME)
+  project_page.set_associated_users_on_edit(PROJECT_EDIT_DESELECT_USERS, PROJECT_EDIT_SELECT_USERS)
+  project_page.fill_edit_description(PROJECT_EDIT_DESCRIPTION)
+  project_page.toggle_active(on=False)
+  project_page.click_save()
+    → Edit: new name, change users, new description, set Active OFF
+
+  project_page.wait_back_on_projects_list(...)
+  project_page.show_inactive_projects()
+  project_page.search_project(EDIT_PROJECT_NAME, wait_after_sec=3)
+  time.sleep(1)
+  assert project_page.is_project_in_table(EDIT_PROJECT_NAME)
+    → Show inactive, search for edited project, verify it appears in table
+
+--------------------------------------------------------------------------------
+10.7 USER MANAGEMENT TEST (test_user_management.py)
+--------------------------------------------------------------------------------
+
+FIXTURE: logged_in_superadmin
+  - Logs in as SUPERADMIN_USER (new.superadmin)
+
+--- test_superadmin_add_user_search_and_delete ---
+
+WORKFLOW: Create user → verify in table → edit user → show inactive → delete
+→ verify deleted.
+
+LINE-BY-LINE:
+  um = UserManagementPage(driver, BASE_URL)
+  user_data = NEW_USER_FOR_MANAGEMENT_TEST
+  um.open_users_page(MANAGEMENT_USERS_URL)
+  um.click_new_user(create_url=MANAGEMENT_USER_CREATE_URL)
+  um.fill_new_user_form(
+      user_name=..., first_name=..., last_name=..., email=..., password=...,
+      role=..., project=PROJECT_FOR_NEW_USER,
+  )
+  um.click_save_user()
+    → Create new user with Admin role
+
+  time.sleep(4)
+  um.wait_back_on_users_list(...)
+  um.search_user(username, ...)
+  assert um.is_user_in_table(username)
+    → Wait, return to list, search, verify user appears
+
+  um.click_user_name_to_edit(username)
+  um.fill_edit_user_form(
+      user_name=updated["user_name"], ...,
+      deselect_projects=PROJECTS_DESELECT_ON_EDIT,
+      select_projects=PROJECTS_SELECT_ON_EDIT,
+  )
+    → Edit user: change name, email, role, projects
+
+  um.wait_back_on_users_list(...)
+  um.show_inactive_users()
+  um.search_user(updated["user_name"], ...)
+  um.delete_user_row(updated["user_name"])
+  um.verify_user_deleted(updated["user_name"], timeout=4)
+    → Show inactive (edited user may be inactive), search, delete, verify gone
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================
