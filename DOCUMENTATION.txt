@@ -399,6 +399,24 @@ Run with visible browser (see what happens):
 
   (PowerShell: $env:HEADLESS = "0"; pytest ...)
 
+Run each test file with visible browser (Bash/Linux):
+  HEADLESS=0 pytest tests/test_auth.py -v
+  HEADLESS=0 pytest tests/test_ticketing.py -v
+  HEADLESS=0 pytest tests/test_admin_ticket.py -v
+  HEADLESS=0 pytest tests/test_notification.py -v
+  HEADLESS=0 pytest tests/test_admin_notification.py -v
+  HEADLESS=0 pytest tests/test_client_project.py -v
+  HEADLESS=0 pytest tests/test_user_management.py -v
+
+Run each test file with visible browser (PowerShell):
+  $env:HEADLESS = "0"; pytest tests/test_auth.py -v
+  $env:HEADLESS = "0"; pytest tests/test_ticketing.py -v
+  $env:HEADLESS = "0"; pytest tests/test_admin_ticket.py -v
+  $env:HEADLESS = "0"; pytest tests/test_notification.py -v
+  $env:HEADLESS = "0"; pytest tests/test_admin_notification.py -v
+  $env:HEADLESS = "0"; pytest tests/test_client_project.py -v
+  $env:HEADLESS = "0"; pytest tests/test_user_management.py -v
+
 Short traceback on failure:
   pytest tests/ -v --tb=short
 
